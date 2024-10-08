@@ -1,1 +1,1 @@
-# ComputerSupport
+# ComputerSupport Tereza Kožurková
