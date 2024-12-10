@@ -1,0 +1,210 @@
+---
+title: "Task 4"
+author: Tereza Kozurkova
+date: "10/14/2024"
+format:
+  html:
+    embed-resources: true
+editor: source
+---
+
+## Task 4. Functions
+
+For this task you have to use dataset [Airbnb Prices in European
+Cities](https://www.kaggle.com/datasets/thedevastator/airbnb-prices-in-european-
+cities) from Kaggle. The dataset consists of 20 csv files. You can find the dataset
+in the folder `/data/airbnb/`.
+
+This dataset provides a comprehensive look at Airbnb prices in some of the most
+popular European cities. Each listing is evaluated for various attributes such as
+room types, cleanliness and satisfaction ratings, bedrooms, distance from the city
+centre, and more to capture an in-depth understanding of Airbnb prices on both
+weekdays and weekends.
+
+You task is to write the following function:
+
+1. **`explore_city(file_path)`**
+
+This function takes as an argument path to a one csv file and returns the data
+frame with the next columns:
+
+- `city_name`,
+- `day_type` with 2 options: `weekdays` or `weekends`,
+- `n_rows` with number of rows in the file,
+- `min_price` with min from `realSum`,
+- `avg_price` with average from `realSum`,
+- `max_price` with max from `realSum`,
+- `avg_satisfaction` with average from `guest_satisfaction_overall`.
+
+2. **`prepare_dataset(folder_path)`**
+
+This function should:
+
+- Read all the CSV files from the dataset.
+- Add two new columns:
+- `city`: containing the name of the city.
+- `day_type`: indicating whether the price corresponds to `weekdays` or
+`weekends`.
+- Merge all the data into a single dataset.
+- Save the merged dataset as a CSV file named `airbnb.csv`.
+
+3. **`compare_means(city1, city2)`**
+
+This function calculates statistical difference between means of prices (`realSum`)
+between two cities. Use the function `t.test(x, y)` from base R, where `x =
+city1$realSum` and `y = city2$realSum`. For data use merged data frame
+`airbnb.csv` from `prepare_dataset()` function.
+
+> **Hint:** For extracting **city name** and **day type** from the file name you
+can use the next function:
+
+```{r}
+library(stringr)
+```
+
+
+```{r}
+file_path <- "C:/aibnb_data/rome_weekdays.csv"
+file_path <- "C:/aibnb_data/rome_weekends.csv"
+
+explore_city <- function(file_path) {
+  # Kontrola, či súbor existuje
+  if (!file.exists(file_path)) {
+    stop("Súbor neexistuje: ", file_path)
+  }
+  
+  # Načítanie dát
+  airbnb_data <- read.csv(file_path, header = TRUE)
+  
+  # Extrahovanie názvu mesta a typu dňa z názvu súboru
+  name_day_type <- str_split(basename(file_path), "_")[[1]]
+  city_name <- name_day_type[1]
+  day_type <- tools::file_path_sans_ext(name_day_type[2])
+  
+  # Vytvorenie dátového rámca s požadovanými hodnotami
+  result <- data.frame(
+    city_name = city_name,
+    day_type = day_type,
+    n_rows = nrow(airbnb_data),
+    min_price = min(airbnb_data$realSum, na.rm = TRUE),
+    avg_price = mean(airbnb_data$realSum, na.rm = TRUE),
+    max_price = max(airbnb_data$realSum, na.rm = TRUE),
+    avg_satisfaction = mean(airbnb_data$guest_satisfaction_overall, na.rm = TRUE)
+  )
+  
+  return(result)
+}
+
+# Testovanie funkcie
+result <- explore_city(file_path)
+print(result)
+
+```
+```{r}
+folder_path <- "C:/aibnb_data"
+prepare_dataset <- function(folder_path) {
+  # Získanie zoznamu všetkých CSV súborov v priečinku
+  files <- list.files(folder_path, pattern = "*.csv", full.names = TRUE)
+  
+  # Inicializácia prázdneho zoznamu na ukladanie dát
+  all_data <- list()
+  
+  # Pre každý súbor načítame dáta
+  for (file_path in files) {
+    # Načítanie dát
+    airbnb_data <- read.csv(file_path, header = TRUE)
+    
+    # Extrahovanie názvu mesta a typu dňa zo súboru
+    name_day_type <- str_split(basename(file_path), "_")[[1]]
+    city <- name_day_type[1]
+    day_type <- tools::file_path_sans_ext(name_day_type[2])
+    
+    # Pridanie nových stĺpcov do dát
+    airbnb_data$city <- city
+    airbnb_data$day_type <- day_type
+    
+    # Pridanie dátového rámca do zoznamu
+    all_data[[length(all_data) + 1]] <- folder_path
+  }
+  
+  # Zlúčenie všetkých dát do jedného dátového rámca
+  merged_data <- do.call(rbind, all_data)
+  
+  # Uloženie dát do CSV súboru
+  write.csv(merged_data, file = "airbnb.csv", row.names = FALSE)
+  
+  # Vrátenie zlúčených dát ako výstup funkcie
+  return(merged_data)
+}
+folder_path <- "C:/aibnb_data"
+merged_data <- prepare_dataset(folder_path)
+
+# Zobrazenie prvých riadkov datasetu
+head(merged_data)
+
+# Skontroluj štruktúru datasetu
+str(merged_data)
+
+# Alternatívne vypíš celé dáta (ak nie sú veľké)
+View(merged_data)
+```
+
+```{r}
+# Funkcia prepare_dataset
+prepare_dataset <- function(folder_path) {
+  library(stringr)
+  
+  files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
+  merged_data <- data.frame()
+  
+  for (file_path in files) {
+    file_info <- str_split(basename(file_path), "_", simplify = TRUE)
+    city_name <- file_info[1]
+    day_type <- str_remove(file_info[2], "\\.csv")
+    
+    airbnb_data <- read.csv(file_path, header = TRUE)
+    airbnb_data$city <- city_name
+    airbnb_data$day_type <- day_type
+    
+    merged_data <- rbind(merged_data, airbnb_data)
+  }
+  
+  write.csv(merged_data, "airbnb.csv", row.names = FALSE)
+  return(merged_data)
+}
+
+# Funkcia compare_means
+compare_means <- function(city1, city2) {
+  airbnb_data <- read.csv("airbnb.csv")
+  
+  if (!"city" %in% colnames(airbnb_data)) {
+    stop("Dataset neobsahuje stĺpec 'city'.")
+  }
+  if (!"realSum" %in% colnames(airbnb_data)) {
+    stop("Dataset neobsahuje stĺpec 'realSum'.")
+  }
+  
+  data_city1 <- subset(airbnb_data, city == city1)
+  data_city2 <- subset(airbnb_data, city == city2)
+  
+  if (nrow(data_city1) == 0) {
+    stop(paste("Mesto", city1, "neobsahuje žiadne dáta."))
+  }
+  if (nrow(data_city2) == 0) {
+    stop(paste("Mesto", city2, "neobsahuje žiadne dáta."))
+  }
+  
+  t_test_result <- t.test(data_city1$realSum, data_city2$realSum)
+  return(t_test_result)
+}
+
+# Nastavenie priečinku a zlúčenie dát
+folder_path <- "C:/aibnb_data"
+merged_data <- prepare_dataset(folder_path)
+
+# Porovnanie Ríma a Paríža
+result <- compare_means("rome", "paris")
+print(result)
+
+```
+
